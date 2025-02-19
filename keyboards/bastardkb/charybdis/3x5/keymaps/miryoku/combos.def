@@ -14,6 +14,7 @@ COMB(dblQt, KC_DOUBLE_QUOTE, MT(MOD_RCTL, KC_K), MT(MOD_LCTL, KC_D))
 
 COMB(cpsLk, CW_TOGG, MT(MOD_LSFT, KC_F), MT(MOD_RSFT, KC_J))
 
-COMB(weEsc,      KC_ESC,          KC_Q, KC_W)
+//COMB(weEsc,      KC_ESC,          KC_Q, KC_W)
+COMB(weEsc,      KC_ESC,          KC_E, KC_W)
 
 COMB(unSscr,      KC_UNDS,          KC_DOT, KC_SLSH)
