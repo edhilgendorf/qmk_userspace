@@ -21,7 +21,7 @@
 #    define DYNAMIC_KEYMAP_LAYER_COUNT 7
 #endif // VIA_ENABLE
 
-#define COMBO_TERM 20
+#define COMBO_TERM 25
 
 #ifndef __arm__
 /* Disable unused features. */
