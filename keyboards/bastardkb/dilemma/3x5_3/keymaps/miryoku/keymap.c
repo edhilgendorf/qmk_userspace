@@ -1,6 +1,7 @@
 /*
- * Copyright 2023 casuanoob (@casuanoob)
- * Adapted for Miryoku by edhilgendorf for Dilemma 3x5_3
+ * Copyright 2021 Charly Delay <charly@codesink.dev> (@0xcharly)
+ * Copyright 2023 casuanoob <casuanoob@hotmail.com> (@casuanoob)
+ * Adapted for Dilemma 3x5_3 from Charybdis Miryoku
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +16,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include QMK_KEYBOARD_H
 #include "g/keymap_combo.h"
 #include "caps_word.h"
 
-// Automatically enable sniping-mode on the pointer layer.
-#define DILEMMA_AUTO_SNIPING_ON_LAYER LAYER_POINTER
+#ifdef DILEMMA_AUTO_POINTER_LAYER_TRIGGER_ENABLE
+#    include "timer.h"
+#endif // DILEMMA_AUTO_POINTER_LAYER_TRIGGER_ENABLE
 
 enum dilemma_keymap_layers {
     LAYER_BASE = 0,
@@ -33,11 +34,27 @@ enum dilemma_keymap_layers {
     LAYER_SYMBOLS,
 };
 
+// Automatically enable sniping-mode on the pointer layer.
+#define DILEMMA_AUTO_SNIPING_ON_LAYER LAYER_POINTER
+
+#ifdef DILEMMA_AUTO_POINTER_LAYER_TRIGGER_ENABLE
+static uint16_t auto_pointer_layer_timer = 0;
+
+#    ifndef DILEMMA_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS
+#        define DILEMMA_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS 1000
+#    endif // DILEMMA_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS
+
+#    ifndef DILEMMA_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD
+#        define DILEMMA_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD 8
+#    endif // DILEMMA_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD
+#endif     // DILEMMA_AUTO_POINTER_LAYER_TRIGGER_ENABLE
+
 #define ESC_MED LT(LAYER_MEDIA, KC_ESC)
 #define SPC_NAV LT(LAYER_NAVIGATION, KC_SPC)
 #define TAB_FUN LT(LAYER_FUNCTION, KC_TAB)
 #define ENT_SYM LT(LAYER_SYMBOLS, KC_ENT)
 #define BSP_NUM LT(LAYER_NUMERAL, KC_BSPC)
+#define _L_PTR(KC) LT(LAYER_POINTER, KC)
 
 #ifndef POINTING_DEVICE_ENABLE
 #    define DRGSCRL KC_NO
@@ -70,12 +87,6 @@ enum dilemma_keymap_layers {
     _______________DEAD_HALF_ROW_______________, KC_PAUS,   KC_F1,   KC_F2,   KC_F3,  KC_F10, \
                       XXXXXXX, XXXXXXX, _______, XXXXXXX, XXXXXXX, XXXXXXX
 
-#define LAYOUT_LAYER_NAVIGATION                                                               \
-    _______________DEAD_HALF_ROW_______________, _______________DEAD_HALF_ROW_______________, \
-    ______________HOME_ROW_GACS_L______________, KC_LEFT, KC_DOWN, KC_UP,   KC_RIGHT, CW_TOGG, \
-    _______________DEAD_HALF_ROW_______________,  KC_INS, KC_HOME, KC_PGDN, KC_PGUP,  KC_END, \
-                      XXXXXXX, _______, XXXXXXX,  KC_ENT, KC_BSPC, KC_DEL
-
 #define LAYOUT_LAYER_MEDIA                                                                    \
     XXXXXXX,RGB_RMOD, RGB_TOG, RGB_MOD, XXXXXXX, XXXXXXX,RGB_RMOD, RGB_TOG, RGB_MOD, XXXXXXX, \
     KC_MPRV, KC_VOLD, KC_MUTE, KC_VOLU, KC_MNXT, KC_MPRV, KC_VOLD, KC_MUTE, KC_VOLU, KC_MNXT, \
@@ -87,6 +98,12 @@ enum dilemma_keymap_layers {
     ______________HOME_ROW_GACS_L______________, ______________HOME_ROW_GACS_R______________, \
     _______, DRGSCRL, SNIPING, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, SNIPING, DRGSCRL, _______, \
                       KC_BTN2, KC_BTN1, KC_BTN3, KC_BTN3, KC_BTN1, KC_BTN3
+
+#define LAYOUT_LAYER_NAVIGATION                                                               \
+    _______________DEAD_HALF_ROW_______________, _______________DEAD_HALF_ROW_______________, \
+    ______________HOME_ROW_GACS_L______________, KC_LEFT, KC_DOWN, KC_UP,   KC_RIGHT, CW_TOGG, \
+    _______________DEAD_HALF_ROW_______________,  KC_INS, KC_HOME, KC_PGDN, KC_PGUP,  KC_END, \
+                      XXXXXXX, _______, XXXXXXX,  KC_ENT, KC_BSPC, KC_DEL
 
 #define LAYOUT_LAYER_NUMERAL                                                                  \
     KC_LBRC,    KC_7,    KC_8,    KC_9, KC_RBRC, _______________DEAD_HALF_ROW_______________, \
@@ -115,7 +132,7 @@ enum dilemma_keymap_layers {
 #define HOME_ROW_MOD_GACS(...) _HOME_ROW_MOD_GACS(__VA_ARGS__)
 
 /**
- * \brief Add pointer layer access to Z and / keys.
+ * \brief Add pointer layer keys to a layout.
  */
 #define _POINTER_MOD(                                                  \
     L00, L01, L02, L03, L04, R05, R06, R07, R08, R09,                  \
@@ -126,8 +143,8 @@ enum dilemma_keymap_layers {
              R05,         R06,         R07,         R08,         R09,  \
              L10,         L11,         L12,         L13,         L14,  \
              R15,         R16,         R17,         R18,         R19,  \
-      LT(LAYER_POINTER, L20), L21,         L22,         L23,         L24,  \
-             R25,         R26,         R27,         R28,  LT(LAYER_POINTER, R29), \
+      _L_PTR(L20),        L21,         L22,         L23,         L24,  \
+             R25,         R26,         R27,         R28,  _L_PTR(R29), \
       __VA_ARGS__
 #define POINTER_MOD(...) _POINTER_MOD(__VA_ARGS__)
 
@@ -147,6 +164,32 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // clang-format on
 
 #ifdef POINTING_DEVICE_ENABLE
+#    ifdef DILEMMA_AUTO_POINTER_LAYER_TRIGGER_ENABLE
+report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+    if (abs(mouse_report.x) > DILEMMA_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD || abs(mouse_report.y) > DILEMMA_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD) {
+        if (auto_pointer_layer_timer == 0) {
+            layer_on(LAYER_POINTER);
+#        ifdef RGB_MATRIX_ENABLE
+            rgb_matrix_mode_noeeprom(RGB_MATRIX_NONE);
+            rgb_matrix_sethsv_noeeprom(HSV_GREEN);
+#        endif // RGB_MATRIX_ENABLE
+        }
+        auto_pointer_layer_timer = timer_read();
+    }
+    return mouse_report;
+}
+
+void matrix_scan_user(void) {
+    if (auto_pointer_layer_timer != 0 && TIMER_DIFF_16(timer_read(), auto_pointer_layer_timer) >= DILEMMA_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS) {
+        auto_pointer_layer_timer = 0;
+        layer_off(LAYER_POINTER);
+#        ifdef RGB_MATRIX_ENABLE
+        rgb_matrix_mode_noeeprom(RGB_MATRIX_DEFAULT_MODE);
+#        endif // RGB_MATRIX_ENABLE
+    }
+}
+#    endif // DILEMMA_AUTO_POINTER_LAYER_TRIGGER_ENABLE
+
 #    ifdef DILEMMA_AUTO_SNIPING_ON_LAYER
 layer_state_t layer_state_set_user(layer_state_t state) {
     dilemma_set_pointer_sniping_enabled(layer_state_cmp(state, DILEMMA_AUTO_SNIPING_ON_LAYER));
@@ -168,3 +211,9 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 };
 // clang-format on
 #endif // ENCODER_MAP_ENABLE
+
+#ifdef RGB_MATRIX_ENABLE
+// Forward-declare this helper function since it is defined in
+// rgb_matrix.c.
+void rgb_matrix_update_pwm_buffers(void);
+#endif
